@@ -56,3 +56,23 @@ void Motor::stop() {
 void Motor::setSpeed(uint8_t speed) {
     speed_ = speed;
 }
+
+void Motor::leftWheel(uint8_t speed) {
+    if (speed > 0) {
+        pwmWrite(pwmLeft_, speed);
+        writePin(dirLeft_, HIGH);
+    } else {
+        pwmWrite(pwmLeft_, -speed);
+        writePin(dirLeft_, LOW);
+    }
+}
+
+void Motor::rightWheel(uint8_t speed) {
+    if (speed > 0) {
+        pwmWrite(pwmRight_, speed);
+        writePin(dirRight_, LOW);
+    } else {
+        pwmWrite(pwmRight_, -speed);
+        writePin(dirRight_, HIGH);
+    }
+}

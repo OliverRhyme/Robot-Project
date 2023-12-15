@@ -13,6 +13,9 @@ public:
     void turnRight();
     void stop();
 
+    void leftWheel(uint8_t speed);
+    void rightWheel(uint8_t speed);
+
     void setSpeed(uint8_t speed);
 
     // Call this in setup() function

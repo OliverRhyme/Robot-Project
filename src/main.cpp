@@ -25,28 +25,34 @@ void motorLoop();
 double currentDistance;
 double pidOut;
 
-const double targetDistance = 30.0;
-const double Kp = 4.0;  // Proportional gain
-const double Ki = 1.0;  // Integral gain
-const double Kd = 0.2;  // Derivative gain
+double targetDistance = 40.0;
+double Kp = 4.0;  // Proportional gain
+double Ki = 1.4;  // Integral gain
+double Kd = 0.6;  // Derivative gain
 
 PID myPID(&currentDistance, &pidOut, &targetDistance, Kp, Ki, Kd, DIRECT);
 
+const uint8_t defaultSpeed = 100;
+
+double leftDistance;
+double frontDistance;
 
 void setup() {
     setupPin(TRIGGER_PIN, OUTPUT);
     setupPin(ECHO_PIN, INPUT);
 
-
     Serial.begin(9600);
     motor.init(LEFT_MOTOR_PWM_PIN, RIGHT_MOTOR_PWM_PIN, LEFT_MOTOR_DIR_PIN, RIGHT_MOTOR_DIR_PIN);
+    motor.setSpeed(defaultSpeed);
 
     servo.attach(SERVO_PIN);
+
+    servo.write(180);
 
     sensorThread.onRun(sensorLoop);
     motorThread.onRun(motorLoop);
 
-    myPID.SetOutputLimits(-128, 128);
+    myPID.SetOutputLimits(-64, 64);
     myPID.SetMode(AUTOMATIC);
 }
 
@@ -77,13 +83,13 @@ void sensorLoop() {
 void motorLoop() {
     myPID.Compute();
 
-    if (pidOut > 0) {
-        motor.backward();
-        motor.setSpeed(pidOut);
+    if (pidOut != 0) {
+        motor.leftWheel(defaultSpeed + pidOut);
+        motor.rightWheel(defaultSpeed);
     } else {
         motor.forward();
-        motor.setSpeed(-pidOut);
     }
+
     Serial.println(pidOut);
 }
 
