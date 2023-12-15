@@ -7,4 +7,6 @@
 #define LEFT_MOTOR_DIR_PIN 2
 #define RIGHT_MOTOR_DIR_PIN 4
 
+#define SERVO_PIN 10
+
 #endif // PIN_ASSIGN_H

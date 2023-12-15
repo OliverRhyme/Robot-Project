@@ -7,11 +7,17 @@
 #include "pin_assign.h"
 
 #include "motor.h"
+#include "Servo.h"
 
 Motor motor;
+Servo servo;
 
 void setup() {
     motor.init(LEFT_MOTOR_PWM_PIN, RIGHT_MOTOR_PWM_PIN, LEFT_MOTOR_DIR_PIN, RIGHT_MOTOR_DIR_PIN);
+
+    servo.attach(SERVO_PIN);
+
+    servo.write(90);
 }
 
 void loop() {
@@ -34,6 +40,7 @@ void loop() {
 
 // Main function
 int main(void) {
+    Servo();
     init();
 
     setup();
