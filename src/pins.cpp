@@ -147,7 +147,7 @@ void pwmWrite(uint8_t pin, uint8_t value) {
     }
 }
 
-uint16_t analogRead(uint8_t pin) {
+uint16_t readAnalog(uint8_t pin) {
     uint8_t low, high;
 
     if (pin >= 14)

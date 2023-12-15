@@ -9,4 +9,7 @@
 
 #define SERVO_PIN 10
 
+#define TRIGGER_PIN 12
+#define ECHO_PIN 13
+
 #endif // PIN_ASSIGN_H
