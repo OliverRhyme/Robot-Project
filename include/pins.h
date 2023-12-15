@@ -12,9 +12,10 @@
 
 void setupPin(uint8_t pin, uint8_t mode);
 void writePin(uint8_t pin, uint8_t value);
-// void readPin(uint8_t pin);
+uint8_t readPin(uint8_t pin);
 
 void pwmWrite(uint8_t pin, uint8_t value);
+uint16_t analogRead(uint8_t pin);
 
 
 

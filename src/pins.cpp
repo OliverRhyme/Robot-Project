@@ -40,6 +40,53 @@ void writePin(uint8_t pin, uint8_t value) {
     }
 }
 
+void turnOffPwm(uint8_t pin) {
+    if (pin == 5 || pin == 6) {
+        uint8_t comValue;
+
+        if (pin == 5) {
+            comValue = COM0B1;
+        } else if (pin == 6) {
+            comValue = COM0A1;
+        }
+        TCCR0A &= ~(1 << comValue); // disconnect timer 0 from pin 5 or 6
+
+    } else if (pin == 9 || pin == 10) {
+        uint8_t comValue;
+
+        if (pin == 9) {
+            comValue = COM1A1;
+        } else if (pin == 10) {
+            comValue = COM1B1;
+        }
+        TCCR1A &= ~(1 << comValue); // disconnect timer 1 from pin 9 or 10
+
+    } else if (pin == 11 || pin == 3) {
+        uint8_t comValue;
+
+        if (pin == 11) {
+            comValue = COM2A1;
+        } else if (pin == 3) {
+            comValue = COM2B1;
+        }
+        TCCR2A &= ~(1 << comValue); // disconnect timer 2 from pin 11 or 3
+    }
+}
+
+uint8_t readPin(uint8_t pin) {
+    turnOffPwm(pin); // disconnect pin from timer if it is a PWM pin, so that it can be read
+
+    if (pin >= 0 && pin <= 7) {
+        if (PIND & (1 << pin)) {
+            return HIGH;
+        }
+    } else if (pin >= 8 && pin <= 13) {
+        if (PINB & (1 << (pin % 8))) {
+            return HIGH;
+        }
+    }
+    return LOW;
+}
 
 void pwmWrite(uint8_t pin, uint8_t value) {
 
@@ -102,3 +149,27 @@ void pwmWrite(uint8_t pin, uint8_t value) {
     }
 }
 
+uint16_t analogRead(uint8_t pin) {
+
+	uint8_t low, high;
+
+    if (pin >= 14) pin -= 14; // allow for channel or pin numbers
+
+    ADCSRA |= (1 << ADSC); // start conversion
+
+    // DEFAULT analog reference
+    // set the analog reference (high two bits of ADMUX) and select the channel
+    ADMUX = (1 << 6) | (pin & 0x07);
+
+	// ADSC is cleared when the conversion finishes
+    while (ADCSRA & (1 << ADSC));
+
+	// we have to read ADCL first; doing so locks both ADCL
+	// and ADCH until ADCH is read.  reading ADCL second would
+	// cause the results of each conversion to be discarded,
+	// as ADCL and ADCH would be locked when it completed.
+	low  = ADCL;
+	high = ADCH;
+
+    return high << 8 | low; // return result
+}

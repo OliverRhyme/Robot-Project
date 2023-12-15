@@ -4,6 +4,8 @@
 #include "init.h"
 #include "pins.h"
 
+#include "Thread.h"
+
 #define LEFT_MOTOR_PWM_PIN 5
 #define RIGHT_MOTOR_PWM_PIN 6
 
