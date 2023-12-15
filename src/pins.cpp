@@ -49,7 +49,7 @@ void turnOffPwm(uint8_t pin) {
         } else if (pin == 6) {
             comValue = COM0A1;
         }
-        TCCR0A &= ~(1 << comValue); // disconnect timer 0 from pin 5 or 6
+        TCCR0A &= ~(1 << comValue);  // disconnect timer 0 from pin 5 or 6
 
     } else if (pin == 9 || pin == 10) {
         uint8_t comValue;
@@ -59,7 +59,7 @@ void turnOffPwm(uint8_t pin) {
         } else if (pin == 10) {
             comValue = COM1B1;
         }
-        TCCR1A &= ~(1 << comValue); // disconnect timer 1 from pin 9 or 10
+        TCCR1A &= ~(1 << comValue);  // disconnect timer 1 from pin 9 or 10
 
     } else if (pin == 11 || pin == 3) {
         uint8_t comValue;
@@ -69,12 +69,12 @@ void turnOffPwm(uint8_t pin) {
         } else if (pin == 3) {
             comValue = COM2B1;
         }
-        TCCR2A &= ~(1 << comValue); // disconnect timer 2 from pin 11 or 3
+        TCCR2A &= ~(1 << comValue);  // disconnect timer 2 from pin 11 or 3
     }
 }
 
 uint8_t readPin(uint8_t pin) {
-    turnOffPwm(pin); // disconnect pin from timer if it is a PWM pin, so that it can be read
+    turnOffPwm(pin);  // disconnect pin from timer if it is a PWM pin, so that it can be read
 
     if (pin >= 0 && pin <= 7) {
         if (PIND & (1 << pin)) {
@@ -89,7 +89,6 @@ uint8_t readPin(uint8_t pin) {
 }
 
 void pwmWrite(uint8_t pin, uint8_t value) {
-
     setupPin(pin, OUTPUT);
 
     if (pin == 5 || pin == 6) {
@@ -100,14 +99,13 @@ void pwmWrite(uint8_t pin, uint8_t value) {
         } else if (pin == 6) {
             comValue = COM0A1;
         }
-        TCCR0A |= (1 << comValue); // connect timer 0 to pin 5 or 6
-        
-        if (pin == 5) {
-            OCR0B = value; // set duty cycle
-        } else if (pin == 6) {
-            OCR0A = value; // set duty cycle
-        }
+        TCCR0A |= (1 << comValue);  // connect timer 0 to pin 5 or 6
 
+        if (pin == 5) {
+            OCR0B = value;  // set duty cycle
+        } else if (pin == 6) {
+            OCR0A = value;  // set duty cycle
+        }
 
     } else if (pin == 9 || pin == 10) {
         uint8_t comValue;
@@ -117,12 +115,12 @@ void pwmWrite(uint8_t pin, uint8_t value) {
         } else if (pin == 10) {
             comValue = COM1B1;
         }
-        TCCR1A |= (1 << comValue); // connect timer 1 to pin 9 or 10
-        
+        TCCR1A |= (1 << comValue);  // connect timer 1 to pin 9 or 10
+
         if (pin == 9) {
-            OCR1A = value; // set duty cycle
+            OCR1A = value;  // set duty cycle
         } else if (pin == 10) {
-            OCR1B = value; // set duty cycle
+            OCR1B = value;  // set duty cycle
         }
 
     } else if (pin == 11 || pin == 3) {
@@ -133,14 +131,14 @@ void pwmWrite(uint8_t pin, uint8_t value) {
         } else if (pin == 3) {
             comValue = COM2B1;
         }
-        TCCR2A |= (1 << comValue); // connect timer 2 to pin 11 or 3
-        
+        TCCR2A |= (1 << comValue);  // connect timer 2 to pin 11 or 3
+
         if (pin == 11) {
-            OCR2A = value; // set duty cycle
+            OCR2A = value;  // set duty cycle
         } else if (pin == 3) {
-            OCR2B = value; // set duty cycle
+            OCR2B = value;  // set duty cycle
         }
-    } else { // if pin is not a PWM pin, fall back to digital write
+    } else {  // if pin is not a PWM pin, fall back to digital write
         if (value >= 128) {
             writePin(pin, HIGH);
         } else {
@@ -150,26 +148,26 @@ void pwmWrite(uint8_t pin, uint8_t value) {
 }
 
 uint16_t analogRead(uint8_t pin) {
+    uint8_t low, high;
 
-	uint8_t low, high;
+    if (pin >= 14)
+        pin -= 14;  // allow for channel or pin numbers
 
-    if (pin >= 14) pin -= 14; // allow for channel or pin numbers
-
-    ADCSRA |= (1 << ADSC); // start conversion
+    ADCSRA |= (1 << ADSC);  // start conversion
 
     // DEFAULT analog reference
     // set the analog reference (high two bits of ADMUX) and select the channel
     ADMUX = (1 << 6) | (pin & 0x07);
 
-	// ADSC is cleared when the conversion finishes
-    while (ADCSRA & (1 << ADSC));
+    // ADSC is cleared when the conversion finishes
+    while ((ADCSRA & (1 << ADSC)));
 
-	// we have to read ADCL first; doing so locks both ADCL
-	// and ADCH until ADCH is read.  reading ADCL second would
-	// cause the results of each conversion to be discarded,
-	// as ADCL and ADCH would be locked when it completed.
-	low  = ADCL;
-	high = ADCH;
+    // we have to read ADCL first; doing so locks both ADCL
+    // and ADCH until ADCH is read.  reading ADCL second would
+    // cause the results of each conversion to be discarded,
+    // as ADCL and ADCH would be locked when it completed.
+    low = ADCL;
+    high = ADCH;
 
-    return high << 8 | low; // return result
+    return high << 8 | low;  // return result
 }

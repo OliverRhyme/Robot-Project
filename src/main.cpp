@@ -4,31 +4,31 @@
 #include "init.h"
 #include "pins.h"
 
-#include "Thread.h"
+#include "pin_assign.h"
 
-#define LEFT_MOTOR_PWM_PIN 5
-#define RIGHT_MOTOR_PWM_PIN 6
+#include "motor.h"
 
-#define LEFT_MOTOR_DIR_PIN 2
-#define RIGHT_MOTOR_DIR_PIN 4
-
-void setup();
-void loop();
+Motor motor;
 
 void setup() {
-    setupPin(LEFT_MOTOR_DIR_PIN, OUTPUT);
-    setupPin(RIGHT_MOTOR_DIR_PIN, OUTPUT);
-
-    setupPin(LEFT_MOTOR_PWM_PIN, OUTPUT);
-    setupPin(RIGHT_MOTOR_PWM_PIN, OUTPUT);
+    motor.init(LEFT_MOTOR_PWM_PIN, RIGHT_MOTOR_PWM_PIN, LEFT_MOTOR_DIR_PIN, RIGHT_MOTOR_DIR_PIN);
 }
 
 void loop() {
-    pwmWrite(LEFT_MOTOR_PWM_PIN, 255);
-    pwmWrite(RIGHT_MOTOR_PWM_PIN, 255);
+    motor.forward();
+    _delay_ms(1000);
 
-    writePin(LEFT_MOTOR_DIR_PIN, HIGH);
-    writePin(RIGHT_MOTOR_DIR_PIN, LOW);
+    motor.backward();
+    _delay_ms(1000);
+
+    motor.turnLeft();
+    _delay_ms(1000);
+
+    motor.turnRight();
+    _delay_ms(1000);
+
+    motor.stop();
+    _delay_ms(1000);
 }
 
 

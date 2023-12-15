@@ -27,8 +27,8 @@ void init() {
     // set timer 2 prescaler to 64, default on arduino uno atmega328p
     TCCR2B |= (1 << CS22);
 
-    // enable timer 0 overflow interrupt, for delays to work
-    TIMSK0 |= (1 << TOIE0);
+    // enable timer 0 overflow interrupt
+    // TIMSK0 |= (1 << TOIE0);
 
     // ADC
     ADCSRA |= (1 << ADPS2) | (1 << ADPS1) | (1 << ADPS0); // set ADC prescaler to 128
