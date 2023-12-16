@@ -1444,3 +1444,6 @@ typedef StaticStreamBuffer_t StaticMessageBuffer_t;
 #include "FreeRTOSVariant.h"
 
 #endif /* INC_ARDUINO_FREERTOS_H */
+
+void setup(void);
+void loop(void);
