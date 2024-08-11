@@ -17,7 +17,13 @@ Servo servo;
 UltraSonicDistanceSensor ultrasonic(TRIGGER_PIN, ECHO_PIN);
 
 void sensorLoop(void *pvParameters);
+void getSensorData();
+
+void testAlgo();
+
 void motorLoop(void *pvParameters);
+
+void motorDemo(void *pvParameters);
 
 // Main function
 int main(void) {
@@ -32,10 +38,10 @@ int main(void) {
     return 0;
 }
 
-double targetDistance = 20.0;
-double Kp = 5.0;  // Proportional gain
-double Ki = 0.4;  // Integral gain
-double Kd = 0.6;  // Derivative gain
+double targetDistance = 15.0;
+const double Kp = 5.0;  // Proportional gain
+const double Ki = 0.1;  // Integral gain
+const double Kd = 3.5;  // Derivative gain
 
 const uint8_t defaultSpeed = 64;
 
@@ -49,6 +55,8 @@ PID leftPID(&leftDistance, &leftPIDOut, &targetDistance, Kp, Ki, Kd, DIRECT);
 PID frontPID(&frontDistance, &frontPIDOut, &targetDistance, Kp, Ki, Kd, DIRECT);
 
 void setup(void) {
+    Serial.begin(9600);
+
     setupPin(TRIGGER_PIN, OUTPUT);
     setupPin(ECHO_PIN, INPUT);
 
@@ -67,13 +75,14 @@ void setup(void) {
     // NULL - task handle
     xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 3, NULL);
     xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 2, NULL);
+    // xTaskCreate(motorDemo, "Motor DEmo", 128, NULL, 2, NULL);
 
-    leftPID.SetOutputLimits(-(defaultSpeed - 40), (defaultSpeed - 40));
+    double leftOutMax = defaultSpeed * 0.4;
+
+    leftPID.SetOutputLimits(-leftOutMax, leftOutMax);
     frontPID.SetOutputLimits(-(defaultSpeed - 50), (defaultSpeed - 50));
     leftPID.SetMode(AUTOMATIC);
     frontPID.SetMode(AUTOMATIC);
-
-    Serial.begin(9600);
 }
 
 unsigned int checkdistance() {
@@ -90,28 +99,34 @@ void exponentialFilter(double *value, double newValue, double alpha = 0.8) {
     *value = alpha * (newValue) + (1 - alpha) * (*value);
 }
 
+void getSensorData() {
+    if (servo.read() == 180) {
+        exponentialFilter(&leftDistance, checkdistance());
+        leftPID.Compute();
+        delay(100);
+
+        servo.write(90);
+        delay(500);
+
+    } else if (servo.read() == 90) {
+        exponentialFilter(&frontDistance, checkdistance());
+        frontPID.Compute();
+        delay(100);
+
+        servo.write(180);
+        delay(500);
+    }
+}
+
 void sensorLoop(void *pvParameters) {
     for (;;) {
-        if (servo.read() == 180) {
-            exponentialFilter(&leftDistance, checkdistance());
-
-            servo.write(90);
-            delay(1000);
-
-        } else if (servo.read() == 90) {
-            exponentialFilter(&frontDistance, checkdistance());
-
-            servo.write(180);
-            delay(1000);
-        }
+        getSensorData();
+        yield();
     }
 }
 
 void motorLoop(void *pvParameters) {
     for (;;) {
-        leftPID.Compute();
-        frontPID.Compute();
-
         Serial.print("Left PID: ");
         Serial.println(leftPIDOut);
 
@@ -130,4 +145,40 @@ void motorLoop(void *pvParameters) {
         }
         yield();
     }
+}
+
+void motorDemo(void *pvParameters) {
+    Serial.println("Motor Demo");
+
+    Serial.println("Forward");
+    motor.forward();
+    delay(2000);
+    motor.stop();
+
+    delay(1000);
+
+    Serial.println("Backward");
+    motor.backward();
+    delay(2000);
+    motor.stop();
+
+    delay(1000);
+
+    Serial.println("Turn Left");
+    motor.turn(-40);
+    delay(1000);
+
+    Serial.println("Turn Right");
+    motor.turn(40);
+    delay(1000);
+
+    Serial.println("Large Turn Left");
+    motor.turn(-100);
+    delay(1000);
+
+    Serial.println("Large Turn Right");
+    motor.turn(100);
+    delay(1000);
+
+    delay(2000);
 }

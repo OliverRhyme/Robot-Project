@@ -81,7 +81,7 @@ void Motor::rightWheel(uint8_t speed) {
     }
 }
 
-void Motor::turn(uint8_t angle) {
+void Motor::turn(int8_t angle) {
     if (angle > 0) {
         turnRight();
     } else if (angle < 0) {
@@ -91,5 +91,17 @@ void Motor::turn(uint8_t angle) {
         delay(abs(angle) * speed_ * 0.107);
     }
 
+    stop();
+}
+
+void Motor::forward(uint8_t distance) {
+    forward();
+    delay(distance * 10);
+    stop();
+}
+
+void Motor::backward(uint8_t distance) {
+    backward();
+    delay(distance * 10);
     stop();
 }
