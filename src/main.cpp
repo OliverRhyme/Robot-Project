@@ -98,13 +98,13 @@ void sensorLoop(void *pvParameters) {
             exponentialFilter(&leftDistance, checkdistance());
 
             servo.write(90);
-            vPortDelay(1000);
+            delay(1000);
 
         } else if (servo.read() == 90) {
             exponentialFilter(&frontDistance, checkdistance());
 
             servo.write(180);
-            vPortDelay(1000);
+            del(1000);
         }
     }
 }

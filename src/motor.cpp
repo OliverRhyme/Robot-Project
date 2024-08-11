@@ -88,7 +88,7 @@ void Motor::turn(uint8_t angle) {
         turnLeft();
     }
     if (angle != 0) {
-        vPortDelay(abs(angle) * speed_ * 0.107);
+        delay(abs(angle) * speed_ * 0.107);
     }
 
     stop();
