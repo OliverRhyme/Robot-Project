@@ -10,6 +10,9 @@
 #define HIGH 1
 #define LOW 0
 
+// overide pinMode to setupPin
+#define pinMode setupPin
+
 void setupPin(uint8_t pin, uint8_t mode);
 void writePin(uint8_t pin, uint8_t value);
 uint8_t readPin(uint8_t pin);

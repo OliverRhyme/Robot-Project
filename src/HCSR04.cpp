@@ -3,6 +3,7 @@
   Created by Martin Sosic, June 11, 2016.
 */
 
+#include "types.h"
 #include "Arduino.h"
 #include "HCSR04.h"
 

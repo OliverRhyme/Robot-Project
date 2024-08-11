@@ -1,12 +1,10 @@
+#include <Arduino.h>
 #include <Arduino_FreeRTOS.h>
 #include <PID_v1.h>
 #include <avr/interrupt.h>
 // #include <util/delay.h>
 
-typedef bool boolean;
-
 #include "HCSR04.h"
-
 #include "Servo.h"
 #include "init.h"
 #include "motor.h"
@@ -34,8 +32,8 @@ int main(void) {
     return 0;
 }
 
-double targetDistance = 10.0;
-double Kp = 2.0;  // Proportional gain
+double targetDistance = 20.0;
+double Kp = 5.0;  // Proportional gain
 double Ki = 0.4;  // Integral gain
 double Kd = 0.6;  // Derivative gain
 
@@ -67,8 +65,8 @@ void setup(void) {
     // NULL - parameter to pass
     // 2 - priority
     // NULL - task handle
-    xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 2, NULL);
-    // xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 1, NULL);
+    xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 3, NULL);
+    xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 2, NULL);
 
     leftPID.SetOutputLimits(-(defaultSpeed - 40), (defaultSpeed - 40));
     frontPID.SetOutputLimits(-(defaultSpeed - 50), (defaultSpeed - 50));
@@ -104,23 +102,32 @@ void sensorLoop(void *pvParameters) {
             exponentialFilter(&frontDistance, checkdistance());
 
             servo.write(180);
-            del(1000);
+            delay(1000);
         }
     }
 }
 
 void motorLoop(void *pvParameters) {
-    leftPID.Compute();
-    frontPID.Compute();
+    for (;;) {
+        leftPID.Compute();
+        frontPID.Compute();
 
-    if (frontDistance < 10) {
-        motor.turn(90);
-    } else {
-        if (leftPIDOut != 0) {
-            motor.leftWheel(defaultSpeed + leftPIDOut);
-            motor.rightWheel(defaultSpeed);
+        Serial.print("Left PID: ");
+        Serial.println(leftPIDOut);
+
+        Serial.print("Left Distance: ");
+        Serial.println(leftDistance);
+
+        if (frontDistance < 10) {
+            motor.turn(90);
         } else {
-            motor.forward();
+            if (leftPIDOut != 0) {
+                motor.leftWheel(defaultSpeed + leftPIDOut);
+                motor.rightWheel(defaultSpeed);
+            } else {
+                motor.forward();
+            }
         }
+        yield();
     }
 }
