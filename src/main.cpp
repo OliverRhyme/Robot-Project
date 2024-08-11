@@ -1,12 +1,13 @@
 #include <Arduino_FreeRTOS.h>
 #include <PID_v1.h>
 #include <avr/interrupt.h>
-#include <util/delay.h>
+// #include <util/delay.h>
 
 typedef bool boolean;
 
+#include "HCSR04.h"
+
 #include "Servo.h"
-#include "Ultrasonic.h"
 #include "init.h"
 #include "motor.h"
 #include "pin_assign.h"
@@ -15,7 +16,10 @@ typedef bool boolean;
 Motor motor;
 Servo servo;
 
-Ultrasonic ultrasonic(TRIGGER_PIN, ECHO_PIN);
+UltraSonicDistanceSensor ultrasonic(TRIGGER_PIN, ECHO_PIN);
+
+void sensorLoop(void *pvParameters);
+void motorLoop(void *pvParameters);
 
 // Main function
 int main(void) {
@@ -30,15 +34,9 @@ int main(void) {
     return 0;
 }
 
-void sensorLoop(void *pvParameters);
-void motorLoop(void *pvParameters);
-
-double currentDistance;
-double pidOut;
-
-double targetDistance = 30.0;
-double Kp = 5.0;  // Proportional gain
-double Ki = 1.4;  // Integral gain
+double targetDistance = 10.0;
+double Kp = 2.0;  // Proportional gain
+double Ki = 0.4;  // Integral gain
 double Kd = 0.6;  // Derivative gain
 
 const uint8_t defaultSpeed = 64;
@@ -46,7 +44,11 @@ const uint8_t defaultSpeed = 64;
 double leftDistance;
 double frontDistance;
 
-PID myPID(&leftDistance, &pidOut, &targetDistance, Kp, Ki, Kd, DIRECT);
+double leftPIDOut;
+double frontPIDOut;
+
+PID leftPID(&leftDistance, &leftPIDOut, &targetDistance, Kp, Ki, Kd, DIRECT);
+PID frontPID(&frontDistance, &frontPIDOut, &targetDistance, Kp, Ki, Kd, DIRECT);
 
 void setup(void) {
     setupPin(TRIGGER_PIN, OUTPUT);
@@ -66,42 +68,56 @@ void setup(void) {
     // 2 - priority
     // NULL - task handle
     xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 2, NULL);
-    xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 1, NULL);
+    // xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 1, NULL);
 
-    myPID.SetOutputLimits(-(defaultSpeed - 40), (defaultSpeed - 40));
-    myPID.SetMode(AUTOMATIC);
+    leftPID.SetOutputLimits(-(defaultSpeed - 40), (defaultSpeed - 40));
+    frontPID.SetOutputLimits(-(defaultSpeed - 50), (defaultSpeed - 50));
+    leftPID.SetMode(AUTOMATIC);
+    frontPID.SetMode(AUTOMATIC);
+
+    Serial.begin(9600);
+}
+
+unsigned int checkdistance() {
+    unsigned int value = ultrasonic.measureDistanceCm();
+    return value;
 }
 
 void loop(void) {
     // threadController.run();
 }
 
-unsigned int checkdistance() {
-    return ultrasonic.read();
+// Exponential filter function
+void exponentialFilter(double *value, double newValue, double alpha = 0.8) {
+    *value = alpha * (newValue) + (1 - alpha) * (*value);
 }
-
-const float alpha = 0.8;  // Exponential filter coefficient
 
 void sensorLoop(void *pvParameters) {
     for (;;) {
         if (servo.read() == 180) {
-            leftDistance = alpha * checkdistance() + (1 - alpha) * leftDistance;
+            exponentialFilter(&leftDistance, checkdistance());
+
             servo.write(90);
-            vTaskDelay(1);
+            vPortDelay(1000);
+
         } else if (servo.read() == 90) {
-            frontDistance = alpha * checkdistance() + (1 - alpha) * frontDistance;
+            exponentialFilter(&frontDistance, checkdistance());
+
             servo.write(180);
-            vTaskDelay(1);
+            vPortDelay(1000);
         }
     }
 }
 
 void motorLoop(void *pvParameters) {
-    for (;;) {
-        myPID.Compute();
+    leftPID.Compute();
+    frontPID.Compute();
 
-        if (pidOut != 0) {
-            motor.leftWheel(defaultSpeed + pidOut);
+    if (frontDistance < 10) {
+        motor.turn(90);
+    } else {
+        if (leftPIDOut != 0) {
+            motor.leftWheel(defaultSpeed + leftPIDOut);
             motor.rightWheel(defaultSpeed);
         } else {
             motor.forward();

@@ -1,6 +1,10 @@
 #include "motor.h"
 
-Motor::Motor() {};
+#include <Arduino_FreeRTOS.h>
+
+#include "math_util.h"
+
+Motor::Motor(){};
 
 void Motor::init(int pwmLeft, int pwmRight, int dirLeft, int dirRight) {
     pwmLeft_ = pwmLeft;
@@ -75,4 +79,17 @@ void Motor::rightWheel(uint8_t speed) {
         pwmWrite(pwmRight_, -speed);
         writePin(dirRight_, HIGH);
     }
+}
+
+void Motor::turn(uint8_t angle) {
+    if (angle > 0) {
+        turnRight();
+    } else if (angle < 0) {
+        turnLeft();
+    }
+    if (angle != 0) {
+        vPortDelay(abs(angle) * speed_ * 0.107);
+    }
+
+    stop();
 }

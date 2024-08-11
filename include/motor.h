@@ -18,6 +18,8 @@ public:
 
     void setSpeed(uint8_t speed);
 
+    void turn(uint8_t angle);
+
     // Call this in setup() function
     void init(int pwmLeft, int pwmRight, int dirLeft, int dirRight);
 
