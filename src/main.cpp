@@ -19,7 +19,7 @@ UltraSonicDistanceSensor ultrasonic(TRIGGER_PIN, ECHO_PIN);
 void sensorLoop(void *pvParameters);
 void getSensorData();
 
-void testAlgo();
+void testAlgo(void *pvParameters);
 
 void motorLoop(void *pvParameters);
 
@@ -38,12 +38,12 @@ int main(void) {
     return 0;
 }
 
-double targetDistance = 15.0;
+double targetDistance = 20.0;
 const double Kp = 5.0;  // Proportional gain
 const double Ki = 0.1;  // Integral gain
 const double Kd = 3.5;  // Derivative gain
 
-const uint8_t defaultSpeed = 64;
+const uint8_t defaultSpeed = 60;
 
 double leftDistance;
 double frontDistance;
@@ -73,9 +73,10 @@ void setup(void) {
     // NULL - parameter to pass
     // 2 - priority
     // NULL - task handle
-    xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 3, NULL);
-    xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 2, NULL);
+    // xTaskCreate(sensorLoop, "Sensor Loop", 128, NULL, 3, NULL);
+    // xTaskCreate(motorLoop, "Motor Loop", 128, NULL, 2, NULL);
     // xTaskCreate(motorDemo, "Motor DEmo", 128, NULL, 2, NULL);
+    xTaskCreate(testAlgo, "Test Algo", 128, NULL, 1, NULL);
 
     double leftOutMax = defaultSpeed * 0.4;
 
@@ -95,13 +96,14 @@ void loop(void) {
 }
 
 // Exponential filter function
-void exponentialFilter(double *value, double newValue, double alpha = 0.8) {
+void exponentialFilter(double *value, double newValue, double alpha = 0.9) {
     *value = alpha * (newValue) + (1 - alpha) * (*value);
 }
 
 void getSensorData() {
     if (servo.read() == 180) {
-        exponentialFilter(&leftDistance, checkdistance());
+        leftDistance = checkdistance();
+        // exponentialFilter(&leftDistance, checkdistance());
         leftPID.Compute();
         delay(100);
 
@@ -109,7 +111,8 @@ void getSensorData() {
         delay(500);
 
     } else if (servo.read() == 90) {
-        exponentialFilter(&frontDistance, checkdistance());
+        frontDistance = checkdistance();
+        // exponentialFilter(&frontDistance, checkdistance());
         frontPID.Compute();
         delay(100);
 
@@ -181,4 +184,132 @@ void motorDemo(void *pvParameters) {
     delay(1000);
 
     delay(2000);
+}
+
+void testAlgo2();
+
+void testAlgo(void *pvParameters) {
+    for (;;) {
+        // twice to read left and front distance
+        getSensorData();
+        getSensorData();
+
+        testAlgo2();
+        continue;
+
+        double leftDistanceDiff = targetDistance - leftDistance;
+        double frontDistanceDiff = 15.0 - frontDistance;
+
+        Serial.print("Front:");
+        Serial.println(frontDistance);
+
+        Serial.print("Front diff:");
+        Serial.println(frontDistanceDiff);
+
+        Serial.print("Left:");
+        Serial.println(leftDistance);
+
+        Serial.print("Left diff:");
+        Serial.println(leftDistanceDiff);
+
+        if (frontDistanceDiff > 0) {
+            motor.turn(80);
+            motor.forward(100);
+            continue;
+        }
+
+        // motor.leftWheel(defaultSpeed);
+        // motor.rightWheel(defaultSpeed);
+        // continue;;
+
+        // generate adjustment ladder logic based on leftDistanceDiff
+        if (leftDistanceDiff > 40) {
+            motor.turn(60);
+        } else if (leftDistanceDiff > 20) {
+            Serial.println("Turning Right 20");
+            // motor.leftWheel(defaultSpeed + 20);
+            // motor.rightWheel(defaultSpeed);
+            motor.turn(45);
+        } else if (leftDistanceDiff > 10) {
+            Serial.println("Turning Right 10");
+            // motor.leftWheel(defaultSpeed + 10);
+            // motor.rightWheel(defaultSpeed);
+            motor.turn(20);
+        } else if (leftDistanceDiff > 0) {
+            Serial.println("Turning Right 5");
+            // motor.leftWheel(defaultSpeed + 5);
+            // motor.rightWheel(defaultSpeed);
+            motor.turn(10);
+        } else if (leftDistanceDiff == 0) {
+            motor.forward();
+        } else if (leftDistanceDiff > -10) {
+            Serial.println("Turning left 10");
+            // motor.leftWheel(defaultSpeed - 10);
+            // motor.rightWheel(defaultSpeed);
+            motor.turn(-20);
+        } else if (leftDistanceDiff > -20) {
+            Serial.println("Turning left 20");
+            // motor.leftWheel(defaultSpeed - 20);
+            // motor.rightWheel(defaultSpeed);
+            motor.turn(-45);
+        } else {
+            motor.forward(50);
+            motor.turn(-60);
+            motor.forward(50);
+            // motor.leftWheel(defaultSpeed);
+            // motor.rightWheel(defaultSpeed);
+        }
+
+        motor.forward(50);
+    }
+}
+
+void testAlgo2() {
+    if (frontDistance < targetDistance - 5) {
+        Serial.println("Front blockage");
+        motor.backward(20);
+        delay(100);
+        motor.turn(70);
+        return;
+    }
+
+    if (leftDistance < 10) {
+        Serial.println("Reorient, left too close");
+        motor.backward(60);
+        delay(100);
+        motor.turn(25);
+        delay(100);
+        motor.forward(40);
+        // return;
+    }
+
+    double diff = min(abs(targetDistance - leftDistance + 10), 40);
+    // double diff = 10;
+
+    Serial.print("Diff:");
+    Serial.println(diff);
+    if (leftDistance > targetDistance) {
+        motor.leftWheel(defaultSpeed - diff);
+        motor.rightWheel(defaultSpeed + diff * 0.1);
+        // motor.turn(-20);
+    } else {
+        motor.leftWheel(defaultSpeed + diff);
+        motor.rightWheel(defaultSpeed - diff * 0.1);
+        // motor.turn(20);
+    }
+
+    delay(400);
+    motor.stop();
+
+    if (leftDistance > 60) {
+        Serial.println("Left too far");
+        motor.forward(60);
+        delay(100);
+        motor.turn(-50);
+        delay(500);
+        motor.forward(100);
+        return;
+    }
+
+    // motor.forward(50);
 }
